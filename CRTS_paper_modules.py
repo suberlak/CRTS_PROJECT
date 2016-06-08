@@ -13,6 +13,12 @@ read_xi_ei
 
 MAJOR UPDATE : 2016/06/03 : moved everything to a new directory structure , to
 
+2016/06/07 : modified  read_xi_ei,  to allow it not to read in red stars  : 
+             moved the red stars IDs argument to the very end,  as an optional 
+             kw.  This helps  rework Fig.3 more efficiently. Fig.2, Fig.4 code
+             affected, since the order of things as they are read in has to be 
+             changed,  to inDirStars, good_ids_S_blue, inDirQSO, good_ids_QSO, 
+                          good_ids_S_red
 
 '''
 import numpy as np
@@ -154,8 +160,8 @@ def add_tau_delflx(File, inDir, data):
     
     return delflx, tau, err, master_names
     
-def read_xi_ei(inDirStars, good_ids_S_blue, good_ids_S_red, inDirQSO,
-                 good_ids_QSO):
+def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
+                 good_ids_QSO, good_ids_S_red=None):
     ''' A routine to read the delta_mag (xi), delta_time (tau), and error (ei) 
     for CRTS stars and quasars. Stars and quasar master files are read from 
     inDirStars and inDirQSO , and only those files are selected to be read in 
@@ -165,7 +171,8 @@ def read_xi_ei(inDirStars, good_ids_S_blue, good_ids_S_red, inDirQSO,
     '''                 
     inDir_S       = inDirStars
     good_ids_S_blue    = good_ids_S_blue
-    good_ids_S_red    = good_ids_S_red
+    if good_ids_S_red is not None:
+       good_ids_S_red    = good_ids_S_red
     inDir_Q       = inDirQSO
       
     # Read the Stellar Master file names 
@@ -173,7 +180,8 @@ def read_xi_ei(inDirStars, good_ids_S_blue, good_ids_S_red, inDirQSO,
     masterFilesS1 = [name[3:-4] for name in masterFiles_S]
     
     good_masterSB = np.array(masterFiles_S)[np.in1d(masterFilesS1, good_ids_S_blue)]
-    good_masterSR = np.array(masterFiles_S)[np.in1d(masterFilesS1, good_ids_S_red)]
+    if good_ids_S_red is not None:
+        good_masterSR = np.array(masterFiles_S)[np.in1d(masterFilesS1, good_ids_S_red)]
     
     # Read the QSO Master file names 
     masterFiles_Q = os.listdir(inDir_Q)
@@ -196,7 +204,9 @@ def read_xi_ei(inDirStars, good_ids_S_blue, good_ids_S_red, inDirQSO,
     # are addded from each consecutive master file 
     qso_data = [delflx_Q, tau_Q, err_Q, master_acc_list_Q] 
     star_data_blue = [delflx_S, tau_S, err_S, master_acc_list_S]
-    star_data_red  = [delflx_S, tau_S, err_S, master_acc_list_S]
+    
+    if good_ids_S_red is not None:
+        star_data_red  = [delflx_S, tau_S, err_S, master_acc_list_S]
   
     print('\n')
     c = 0
@@ -216,14 +226,17 @@ def read_xi_ei(inDirStars, good_ids_S_blue, good_ids_S_red, inDirQSO,
             pers = (100.0*c) / float(len(good_masterSB))
             print('\r----- Already read %d%% of Blue Stars'%pers),  
     print('\n')
-    c = 0                         
-    for File in good_masterSR:   # [:len(good_masterQ)]
-        star_data_red = add_tau_delflx(File, inDir_S, star_data_red)      
-        c += 1               
-        if c % 5 == 0:
-            pers = (100.0*c) / float(len(good_masterSR))
-            print('\r----- Already read %d%% of Red Stars'%pers),          
+    
+    if good_ids_S_red is not None:
+        c = 0                         
+        for File in good_masterSR:   # [:len(good_masterQ)]
+            star_data_red = add_tau_delflx(File, inDir_S, star_data_red)      
+            c += 1               
+            if c % 5 == 0:
+                pers = (100.0*c) / float(len(good_masterSR))
+                print('\r----- Already read %d%% of Red Stars'%pers),          
                           
-    return  qso_data, star_data_blue, star_data_red
-
+        return  qso_data, star_data_blue, star_data_red
+    else: 
+        return qso_data, star_data_blue
 
