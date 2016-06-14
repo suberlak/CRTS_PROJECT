@@ -1,3 +1,4 @@
+# -*- coding: iso-8859-1 -*-
 '''
 Some routines that are common to my paper-making programs (those that make 
 Figures 2,3,4  : 
@@ -20,6 +21,9 @@ MAJOR UPDATE : 2016/06/03 : moved everything to a new directory structure , to
              changed,  to inDirStars, good_ids_S_blue, inDirQSO, good_ids_QSO, 
                           good_ids_S_red
 
+2016/06/14 : modified cut_qso , to allow for quasar redshift to be returned 
+             for the chosen quasars. This helps to correct the timescale 
+	     to the restframe. 
 '''
 import numpy as np
 import os
@@ -50,7 +54,7 @@ def get_stars_catalog():
 
 # Perform cuts 
 def cut_qso(qso_cat=None, mMin=-9, mMax=19,   
-            mErrMin = -9, mErrMax = 0.3,cut_mag='r', match_deg_rad = 1.0 / 3600):
+            mErrMin = -9, mErrMax = 0.3,cut_mag='r', redshift = None, match_deg_rad = 1.0 / 3600):
     ''' A short  routine to select CRTS quasars according to desired parameters.
     
     Parameters:
@@ -78,10 +82,15 @@ def cut_qso(qso_cat=None, mMin=-9, mMax=19,
     mask_err = (qso_cat['CRTS_avg_e'].astype(float) > mErrMin) * (qso_cat['CRTS_avg_e'].astype(float) < mErrMax)
     mask = mask_rad * mask_mag * mask_err 
     qso_id = qso_cat['CRTS_id'][mask]
-
     print '\n These cuts reduced the number of qso  in the sample from', \
           len(qso_cat['redshift']), ' to ', len(qso_id)
-    return  qso_id
+
+    if redshift is not None:
+        print('Also returning quasar redshifts...')
+        qso_redshift = np.array(qso_cat['redshift'][mask]).astype(float)
+        return qso_id, qso_redshift 
+    else:
+        return  qso_id
 
 def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9, 
               mErrMax = 0.3, gi_Min = -1, gi_Max=1 , cut_mag='r_mMed'):
