@@ -127,7 +127,7 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
 
 
 # inside the main loop : get tau, delflx from a master file, either qso or star
-def add_tau_delflx(File, inDir, data):
+def add_tau_delflx(File, inDir, data, z=None):
     ''' A function used by read_xi_ei() method to add delta_mag, delta_time, 
     and corresponding error err from an individual master file  
     to the list.
@@ -163,14 +163,17 @@ def add_tau_delflx(File, inDir, data):
     
     # read in tau,  del_mag,  del_mag_err for quasars on the list 
     delflx = np.append(delflx, master[:,0].astype(float))
-    tau = np.append(tau, master[:,1].astype(float))
+    if z is not None:
+        tau = np.append(tau, master[:,1].astype(float) / (1.0+z))
+    else:
+        tau = np.append(tau, master[:,1].astype(float))
     err = np.append(err, master[:,2].astype(float))
     master_names  = np.append(master_acc_list, np.array(len(master[:,0])*[master_name]))
     
     return delflx, tau, err, master_names
     
 def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
-                 good_ids_QSO, good_ids_S_red=None):
+                 good_ids_QSO, good_ids_S_red=None, redshift=None):
     ''' A routine to read the delta_mag (xi), delta_time (tau), and error (ei) 
     for CRTS stars and quasars. Stars and quasar master files are read from 
     inDirStars and inDirQSO , and only those files are selected to be read in 
@@ -193,10 +196,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
         good_masterSR = np.array(masterFiles_S)[np.in1d(masterFilesS1, good_ids_S_red)]
     
     # Read the QSO Master file names 
-    masterFiles_Q = os.listdir(inDir_Q)
-    masterFilesQ1 = [name[3:-4] for name in masterFiles_Q]
-    good_masterQ = np.array(masterFiles_Q)[np.in1d(masterFilesQ1, good_ids_QSO)]
-
+    #masterFiles_Q = os.listdir(inDir_Q)
+    #masterFilesQ1 = [name[3:-4] for name in masterFiles_Q]
+    #good_masterQ =  np.array(good_ids_QSO) #np.array(masterFiles_Q)[np.in1d(masterFilesQ1, good_ids_QSO)]
+    good_masterQ = np.array(['SF_' +qso+'.txt' for qso in good_ids_QSO])
     # If no previous read-in xi, ei exists, initialize arrays    
     print 'making new delflx, tau, xi arrays'
     delflx_S      = np.empty(0,dtype=float)
@@ -216,15 +219,31 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
     
     if good_ids_S_red is not None:
         star_data_red  = [delflx_S, tau_S, err_S, master_acc_list_S]
-  
-    print('\n')
-    c = 0
-    for File in good_masterQ: #  len(masterFiles_Q)
-        qso_data = add_tau_delflx(File,inDir_Q, qso_data)
-        c += 1 
-        if c % 5 == 0:
-            pers = (100.0*c) / float(len(good_masterQ))
-            print('\r----- Already read %d%% of qso'%pers),
+    
+    if redshift is not None: 
+      # correcting QSO delta_time to restframe
+      print('\n')
+      print('Correcting delta_time to restframe, t_rest = t_obs / (1+z)')
+      c = 0
+      for i in range(len(good_masterQ)): #  len(masterFiles_Q)
+          z = redshift[i]
+          File = good_masterQ[i]
+	  qso_data = add_tau_delflx(File,inDir_Q, qso_data, z)
+	  c += 1 
+	  if c % 5 == 0:
+	      pers = (100.0*c) / float(len(good_masterQ))
+	      print('\r----- Already read %d%% of qso'%pers),
+    else:
+      # returning delta_time in observed frame 
+      print('\n')
+      print('Returning delta_time in observed frame, t_obs')
+      c = 0
+      for File in good_masterQ: #  len(masterFiles_Q)
+	  qso_data = add_tau_delflx(File,inDir_Q, qso_data)
+	  c += 1 
+	  if c % 5 == 0:
+	      pers = (100.0*c) / float(len(good_masterQ))
+	      print('\r----- Already read %d%% of qso'%pers),
     
     print('\n')
     c = 0                   
