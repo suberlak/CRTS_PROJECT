@@ -33,11 +33,11 @@ def get_qso_catalog():
     colnames = open(File,'r').read().splitlines()[0][1:].split()
     datatable = np.genfromtxt(File, dtype=str)
     qso_catalog = {}
-    print 'Zipping CRTS-SDSS quasars catalog from ', File, ' ...'
+    print('Zipping CRTS-SDSS quasars catalog from %s' % File)
     for label, column in zip(colnames, datatable.T):
         qso_catalog[label] = column
     
-    print 'Read in ', len(qso_catalog['redshift']), ', quasars from CRTS'
+    print('Read in %d quasars from CRTS' % len(qso_catalog['redshift']))
     return  colnames, qso_catalog
     
 def get_stars_catalog():
@@ -45,11 +45,11 @@ def get_stars_catalog():
     colnames = open(File,'r').read().splitlines()[0][1:].split()
     datatable = np.genfromtxt(File)
     stars_catalog = {}
-    print 'zipping CRTS-SDSS stars catalog...'
+    print('zipping CRTS-SDSS stars catalog...')
     for label, column in zip(colnames, datatable.T):
         stars_catalog[label] = column
     
-    print 'Read in catalog for ', len(stars_catalog['g_mMed']), ', stars from CRTS'  
+    print('Read in catalog for %d stars from CRTS '% len(stars_catalog['g_mMed']))
     return  colnames, stars_catalog
 
 # Perform cuts 
@@ -82,8 +82,9 @@ def cut_qso(qso_cat=None, mMin=-9, mMax=19,
     mask_err = (qso_cat['CRTS_avg_e'].astype(float) > mErrMin) * (qso_cat['CRTS_avg_e'].astype(float) < mErrMax)
     mask = mask_rad * mask_mag * mask_err 
     qso_id = qso_cat['CRTS_id'][mask]
-    print '\n These cuts reduced the number of qso  in the sample from', \
-          len(qso_cat['redshift']), ' to ', len(qso_id)
+    print('\n These cuts reduced the number of qso  in the sample from %d to %d' %
+        (len(qso_cat['redshift']), len(qso_id)))
+          
 
     if redshift is not None:
         print('Also returning quasar redshifts...')
@@ -121,8 +122,8 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
  
     # convert floats to strings without comma and zeros
     star_id = np.array(["{:.0f}".format(name) for name in star_id_f])
-    print '\n These cuts reduced the number of stars  in the sample from', \
-          len(star_cat['CRTS_M']), ' to ', len(star_id)
+    print('\n These cuts reduced the number of stars  in the sample from %d to %d'%
+        (len(star_cat['CRTS_M']),  len(star_id)))
     return  star_id
 
 
@@ -180,17 +181,19 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
     that are on the list of good_ids_S_blue, good_ids_S_red  for blue 
     and red stars, and good_ids_QSO  for quasars.  
     
-    '''                 
-    inDir_S       = inDirStars
+    '''           
+    # use new names to make things code-compliant...      
+    inDir_S = inDirStars
     good_ids_S_blue    = good_ids_S_blue
     if good_ids_S_red is not None:
        good_ids_S_red    = good_ids_S_red
     inDir_Q       = inDirQSO
       
     # Read the Stellar Master file names 
-    masterFiles_S = os.listdir(inDir_S)
+    masterFiles_S = os.listdir(inDir_S)  # need to shorten these names ... 
     masterFilesS1 = [name[3:-4] for name in masterFiles_S]
     
+    # pick out Blue and Red stars, based on their names ... 
     good_masterSB = np.array(masterFiles_S)[np.in1d(masterFilesS1, good_ids_S_blue)]
     if good_ids_S_red is not None:
         good_masterSR = np.array(masterFiles_S)[np.in1d(masterFilesS1, good_ids_S_red)]
@@ -200,8 +203,9 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
     #masterFilesQ1 = [name[3:-4] for name in masterFiles_Q]
     #good_masterQ =  np.array(good_ids_QSO) #np.array(masterFiles_Q)[np.in1d(masterFilesQ1, good_ids_QSO)]
     good_masterQ = np.array(['SF_' +qso+'.txt' for qso in good_ids_QSO])
+
     # If no previous read-in xi, ei exists, initialize arrays    
-    print 'making new delflx, tau, xi arrays'
+    print('making new delflx, tau, xi arrays')
     delflx_S      = np.empty(0,dtype=float)
     tau_S         = np.empty(0,dtype=float)
     err_S         = np.empty(0,dtype=float)
@@ -220,6 +224,8 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
     if good_ids_S_red is not None:
         star_data_red  = [delflx_S, tau_S, err_S, master_acc_list_S]
     
+    ### READ IN QUASARS ### 
+
     if redshift is not None: 
       # correcting QSO delta_time to restframe
       print('\n')
@@ -228,23 +234,25 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
       for i in range(len(good_masterQ)): #  len(masterFiles_Q)
           z = redshift[i]
           File = good_masterQ[i]
-	  qso_data = add_tau_delflx(File,inDir_Q, qso_data, z)
-	  c += 1 
-	  if c % 5 == 0:
-	      pers = (100.0*c) / float(len(good_masterQ))
-	      print('\r----- Already read %d%% of qso'%pers),
+          qso_data = add_tau_delflx(File,inDir_Q, qso_data, z)
+          c += 1 
+          if c % 5 == 0:
+	            pers = (100.0*c) / float(len(good_masterQ))
+	            print('\r----- Already read %d%% of qso'%pers),
     else:
       # returning delta_time in observed frame 
       print('\n')
       print('Returning delta_time in observed frame, t_obs')
       c = 0
       for File in good_masterQ: #  len(masterFiles_Q)
-	  qso_data = add_tau_delflx(File,inDir_Q, qso_data)
-	  c += 1 
-	  if c % 5 == 0:
-	      pers = (100.0*c) / float(len(good_masterQ))
-	      print('\r----- Already read %d%% of qso'%pers),
+          qso_data = add_tau_delflx(File,inDir_Q, qso_data)
+	        c += 1 
+	        if c % 5 == 0:
+	            pers = (100.0*c) / float(len(good_masterQ))
+	            print('\r----- Already read %d%% of qso'%pers),
     
+    ### READ IN BLUE STARS ###
+
     print('\n')
     c = 0                   
     for File in good_masterSB:    # [:len(good_masterQ)]
@@ -252,9 +260,11 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
         c += 1 
         if c % 5 == 0:
             pers = (100.0*c) / float(len(good_masterSB))
-            print('\r----- Already read %d%% of Blue Stars'%pers),  
-    print('\n')
+            print('\r----- Already read %d%% of Blue Stars'%pers),
+
+    ### READ IN BLUE STARS ###          
     
+    print('\n')
     if good_ids_S_red is not None:
         c = 0                         
         for File in good_masterSR:   # [:len(good_masterQ)]
@@ -263,7 +273,9 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
             if c % 5 == 0:
                 pers = (100.0*c) / float(len(good_masterSR))
                 print('\r----- Already read %d%% of Red Stars'%pers),          
-                          
+    
+
+    if good_ids_S_red is not None:
         return  qso_data, star_data_blue, star_data_red
     else: 
         return qso_data, star_data_blue
