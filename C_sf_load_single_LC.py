@@ -65,7 +65,7 @@ def update_progress(progress):
     progress : a value (float or int) between 0 and 100 indicating 
                percentage progress 
     '''
-    print '\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),
+    print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
 
 # Read in the LC files : 
 # if the parameters are provided , from the user input
@@ -174,4 +174,4 @@ for i in range(len(inFiles)):
     #sys.stdout.write('\nSaving... %s \n'% outfile)
     #sys.stdout.flush()
        
-print '\nAll in all, we saved %d SF files ' % (count)  
+print('\nAll in all, we saved %d SF files ' % (count))  
