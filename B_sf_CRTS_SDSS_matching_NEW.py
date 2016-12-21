@@ -41,11 +41,11 @@ def load_sdss_stars():
                 'z_Nobs', 'z_mMed', 'z_mMean', 'z_mErr', 'z_rms_scatt', 'z_chi2']
     
     data_stars = {}
-    print 'Zipping the stars...'
+    print('Zipping the stars...')
     
     for label, column in zip(colnames, datatable.T):
         data_stars[label] = column
-    print 'I read in data for ', len(data_stars['ra']), ' SDSS stars'
+    print('I read in data for %d SDSS stars' % len(data_stars['ra']))
     
     return data_stars
 
@@ -80,12 +80,12 @@ def load_sdss_qso(catalog = 'DB_QSO'):
                     'mu', 'npts' ]
         
         data_quasars = {}
-        print 'zipping quasars...'
+        print('zipping quasars...')
         for label, column in zip(colnames, datatable.T):
             data_quasars[label] = column
             
-        print 'I read in data for ', len(data_quasars['ra']), ' SDSS quasars'
-        print 'From catalog ', File
+        print('I read in data for %d SDSS quasars '%len(data_quasars['ra']))
+        print('From catalog %s' % File)
         return data_quasars
         
     if catalog == 'DB_QSO' : 
@@ -95,12 +95,12 @@ def load_sdss_qso(catalog = 'DB_QSO'):
         colnames = ['dbID', 'ra', 'dec', 'SDR5ID', 'M_i', 'M_i_corr', 'redshift',
                    'mass_BH', 'Lbol', 'u', 'g', 'r', 'i', 'z', 'Au']
         data_quasars = {}
-        print 'zipping quasars...'
+        print('zipping quasars...')
         for label, column in zip(colnames, datatable.T):
             data_quasars[label] = column
         
-        print 'I read in data for ', len(data_quasars['ra']), ' SDSS quasars'
-        print 'From catalog ', File
+        print('I read in data for %d SDSS quasars '%len(data_quasars['ra']))
+        print('From catalog %s' % File)
         return data_quasars
         
     if catalog == 'master_QSO' :
@@ -109,12 +109,12 @@ def load_sdss_qso(catalog = 'DB_QSO'):
         colnames = ['dbID', 'ra', 'dec','redshift', 'u', 'err_u', 'g', 'err_g',
                     'r', 'err_r', 'i', 'err_i', 'z','err_z'] 
         data_quasars = {}
-        print 'zipping quasars...'
+        print('zipping quasars...')
         for label, column in zip(colnames, datatable.T):
             data_quasars[label] = column
         
-        print 'I read in data for ', len(data_quasars['ra']), ' SDSS quasars'
-        print 'From catalog ', File
+        print('I read in data for %d SDSS quasars '%len(data_quasars['ra']))
+        print('From catalog %s' % File)
         return data_quasars            
    
     
@@ -127,7 +127,7 @@ def load_crts_stars(inDir):
     # load names of stars 
     crts_star_names = np.array(os.listdir(inDir))
     
-    print '\nI loaded names of ', len(crts_star_names), ' CRTS stars'
+    print('\nI loaded names of %d CRTS stars ' % len(crts_star_names) )
     
     # load ra dec info for matching...
     File = '../raw_LC_CRTS/stars/radec.00'
@@ -150,7 +150,7 @@ def load_crts_stars(inDir):
 def load_crts_qso(inDir):
     # load names of quasars, which already contain ra and dec infor 
     crts_qso  = os.listdir(inDir)
-    print '\nI loaded names of ', len(crts_qso), ' CRTS quasars'
+    print('\nI loaded names of %d CRTS quasars' % len(crts_qso))
     return crts_qso
 
 crts_dirs = ['../proc_LC_CRTS/qso/','../proc_LC_CRTS/stars/'] 
@@ -243,7 +243,7 @@ def match_stars(purge_pickle=True):
     # Check whether this has not been done already :
     if not os.path.exists(archive_file) or  purge_pickle:
         length= len(crts_star_names)
-        print '\n- Computing average mag, err , extracting ra, dec for %i points' % length
+        print('\n- Computing average mag, err , extracting ra, dec for %i points' % length)
         
         avg_mag=[]
         avg_err=[]
@@ -289,16 +289,17 @@ def match_stars(purge_pickle=True):
                 pers = (100.0*c) / float(length)
                 print('\r----- Already read %d%% of stars '%pers), 
 
-        print '\nSaving the results of all LC parameters for CRTS stars to...'
-        print archive_file
+        print('\nSaving the results of all LC parameters for CRTS stars to...')
+        print(archive_file)
+
         np.savez(archive_file, avg_mag=avg_mag, avg_err=avg_err, ra_ls=ra_ls, 
                  dec_ls=dec_ls, crts_id=crts_id, mjd_span=mjd_span, 
                  mjd_uniq_N=mjd_uniq_N, N_rows=N_rows )   
                  
     else: 
-        print '\n- Using precomputed LC parameters (avg_mag, err, ra,dec, crts_id, ',\
-        ' mjd_span, mjd_uniq_N, N_rows) for CRTS stars from ...'
-        print archive_file
+        print('\n- Using precomputed LC parameters (avg_mag, err, ra,dec, crts_id, ',\
+        ' mjd_span, mjd_uniq_N, N_rows) for CRTS stars from ...')
+        print(archive_file)
         archive = np.load(archive_file)
         avg_mag    = archive['avg_mag']
         avg_err    = archive['avg_err']
@@ -364,13 +365,13 @@ def match_stars(purge_pickle=True):
 #    
     
     data_SDSS_CRTS= {}
-    print 'Zipping the stars...'
+    print('Zipping the stars...')
     
     for label, column in zip(colnames, datatable):
         data_SDSS_CRTS[label] = column
-    print 'I made a dictionary with data for ', len(data_SDSS_CRTS['dec_SDSS']), ' SDSS-CRTS cross-matched stars'
+    print('I made a dictionary with data for %d SDSS-CRTS cross-matched stars' % len(data_SDSS_CRTS['dec_SDSS']) )
     
-    print 'Saving the SDSS-CRTS cross-matched stars catalog...' 
+    print('Saving the SDSS-CRTS cross-matched stars catalog...')
     
     archive_SDSS_CRTS = '../data_products/CRTS_SDSS_cross_matched_stars_catalog.txt' 
     print 'to' , archive_SDSS_CRTS
@@ -384,7 +385,7 @@ def match_stars(purge_pickle=True):
     fmt = ['%s', '%.4e', '%10.5f']   # formatters to choose from...  
     
     np.savetxt(archive_SDSS_CRTS, DATA, delimiter =' ', fmt=fmt[2], header=header)    
-    print 'All done with star catalogs, please see: ' , archive_SDSS_CRTS
+    print('All done with star catalogs, please see: %s'% archive_SDSS_CRTS)
     
     return  sdss_star_data , match_angle_deg
        
@@ -421,7 +422,7 @@ def match_quasars(catalog, purge_pickle=True):
     # Check whether this has not been done already :
     if not os.path.exists(archive_file) or purge_pickle :
         length= len(crts_qso_names)
-        print '- Computing average mag, err , extracting ra, dec for %i points' % length
+        print('- Computing average mag, err , extracting ra, dec for %i points' % length)
         
         avg_mag=[]
         avg_err=[]
@@ -472,8 +473,8 @@ def match_quasars(catalog, purge_pickle=True):
                  N_rows=N_rows )   
                  
     else: 
-        print '\n - Using precomputed LC parameters (avg_mag, err, ra,dec, crts_id, ',\
-        ' mjd_span, mjd_uniq_N, N_rows) for CRTS quasars  from ...'
+        print('\n - Using precomputed LC parameters (avg_mag, err, ra,dec, crts_id, ',\
+        ' mjd_span, mjd_uniq_N, N_rows) for CRTS quasars  from ...')
     
         archive = np.load(archive_file)
         avg_mag    = archive['avg_mag']
@@ -493,7 +494,7 @@ def match_quasars(catalog, purge_pickle=True):
     archive_file_matching = '../data_products/CRTS_SDSS_qso_'+catalog+'_matched_rows.npz'
     
     if not os.path.exists(archive_file_matching) or purge_pickle :
-        print '\n- Computing the SDSS matching rows to CRTS quasars'
+        print('\n- Computing the SDSS matching rows to CRTS quasars')
         SDSS_matching_rows , matched_radius= match_catalogs(cat1_ra=ra_deg_CRTS, 
                                                             cat1_dec=dec_deg_CRTS, 
                                                             cat2_ra= sdss_qso_data['ra'], 
@@ -504,10 +505,10 @@ def match_quasars(catalog, purge_pickle=True):
         np.savez(archive_file_matching, SDSS_matching_rows=SDSS_matching_rows,
                                         match_angle_deg = match_angle_deg)
 
-        print '\n- Saved the SDSS-CRTS quasars matched rows to ', archive_file_matching
+        print('\n- Saved the SDSS-CRTS quasars matched rows to %s'%archive_file_matching)
    
     else:
-        print '\n- Using precomputed SDSS rows matched to CRTS quasars from ', archive_file_matching
+        print('\n- Using precomputed SDSS rows matched to CRTS quasars from %s' archive_file_matching)
         archive =np.load(archive_file_matching)
         SDSS_matching_rows = archive['SDSS_matching_rows']
         match_angle_deg = archive['match_angle_deg']
@@ -525,7 +526,7 @@ def match_quasars(catalog, purge_pickle=True):
     
     qso_names_file = '../data_products/CRTS_SDSS_cross_matched_qso_names.txt'
     np.savetxt(qso_names_file, crts_qso_names, fmt='%s')
-    print '\nSaving the CRTS quasar file names to',   qso_names_file
+    print('\nSaving the CRTS quasar file names to %s'% qso_names_file)
     
     # Make a list of just CRTS QSO id for catalog identification
     crts_qso_names_radec = [name[4:-4] for name in crts_qso_names]    
@@ -565,17 +566,17 @@ def match_quasars(catalog, purge_pickle=True):
                     'mjd_span', 'mjd_uniq_N', 'N_rows']
 
     data_qso_SDSS_CRTS= {}
-    print '\nZipping  quasars...'
+    print('\nZipping  quasars...')
     
     for label, column in zip(colnames, datatable):
         data_qso_SDSS_CRTS[label] = column
-    print 'I made a dictionary with data for ', len(data_qso_SDSS_CRTS['redshift']), \
-          ' CRTS-SDSS cross-matched quasars'
+    print('I made a dictionary with data for %d  CRTS-SDSS cross-matched quasars' % len(data_qso_SDSS_CRTS['redshift']))
+         
     
     archive_SDSS_CRTS_qso = '../data_products/CRTS_SDSS_cross_matched_qso_'+catalog+'_catalog.txt'
 
-    print '\nSaving the SDSS-CRTS cross-matched QSO catalog...' 
-    print ' to ', archive_SDSS_CRTS_qso
+    print('\nSaving the SDSS-CRTS cross-matched QSO catalog...') 
+    print(' to %s'%archive_SDSS_CRTS_qso)
      
     keys = colnames
     if catalog == 's82drw':
