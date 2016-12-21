@@ -49,23 +49,21 @@ an incorrect filter was applied to  '../stars_CRTS_processing_err_w/'
 A major update : moving an entire project to a new location, making a new 
 directory structure to make everything more transparent.   
 
-
-NOTE : 
-the program can be called   sf_load_NEW.py   inDir  outDir  outRoot  objType
-
 """
 
 import os
 import numpy as np 
 import sys
 
-def update_progress(progress):
+from CRTS_paper_modules import update_progress  as upd 
+
+#def update_progress(progress):
     ''' A simple function updating the time progress. 
     
     progress : a value (float or int) between 0 and 100 indicating 
                percentage progress 
     '''
-    print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
+#    print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
 
 # Read in the LC files : 
 # if the parameters are provided , from the user input
@@ -115,7 +113,7 @@ for i in range(len(inFiles)):
    
     percent = 100*(count / total)
     if (count % 10) == 0 : # every tenth loop.. 
-        update_progress(int(percent))
+        upd(int(percent)) # print progress bar  
     count += 1
 
     file = str(inFiles[i])
