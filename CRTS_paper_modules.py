@@ -27,6 +27,16 @@ MAJOR UPDATE : 2016/06/03 : moved everything to a new directory structure , to
 '''
 import numpy as np
 import os
+import sys 
+
+def update_progress(progress):
+    ''' A simple function updating the time progress. 
+    
+    progress : a value (float or int) between 0 and 100 indicating 
+               percentage progress 
+    '''
+    sys.stdout.write('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
+    sys.stdout.flush()
 
 def get_qso_catalog():
     File = '../data_products/CRTS_SDSS_cross_matched_qso_DB_QSO_catalog.txt'
@@ -225,7 +235,8 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
         star_data_red  = [delflx_S, tau_S, err_S, master_acc_list_S]
     
     ### READ IN QUASARS ### 
-
+    
+    print('Reading in quasars...')
     if redshift is not None: 
       # correcting QSO delta_time to restframe
       print('\n')
@@ -237,8 +248,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
           qso_data = add_tau_delflx(File,inDir_Q, qso_data, z)
           c += 1 
           if c % 5 == 0:
-	            pers = (100.0*c) / float(len(good_masterQ))
-	            print('\r----- Already read %d%% of qso'%pers),
+            progress = (100.0*c) / float(len(good_masterQ))
+            update_progress(progress)
+            #print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
+              #print('\r----- Already read %d%% of qso'%pers),
     else:
       # returning delta_time in observed frame 
       print('\n')
@@ -246,35 +259,39 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
       c = 0
       for File in good_masterQ: #  len(masterFiles_Q)
           qso_data = add_tau_delflx(File,inDir_Q, qso_data)
-	        c += 1 
-	        if c % 5 == 0:
-	            pers = (100.0*c) / float(len(good_masterQ))
-	            print('\r----- Already read %d%% of qso'%pers),
+          c += 1
+          if c % 5 == 0:
+            progress = (100.0*c) / float(len(good_masterQ))
+            update_progress(progress)
+            #print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
+              #update_progress(pers)
+	            #print('\r----- Already read %d%% of qso'%pers),
     
     ### READ IN BLUE STARS ###
-
+    
     print('\n')
+    print('Reading in blue stars ...')
     c = 0                   
     for File in good_masterSB:    # [:len(good_masterQ)]
         star_data_blue = add_tau_delflx(File, inDir_S,star_data_blue)
         c += 1 
         if c % 5 == 0:
-            pers = (100.0*c) / float(len(good_masterSB))
-            print('\r----- Already read %d%% of Blue Stars'%pers),
+            progress = (100.0*c) / float(len(good_masterSB))
+            update_progress(progress)
 
-    ### READ IN BLUE STARS ###          
+    ### READ IN RED STARS ###          
     
     print('\n')
+    print('Reading in red stars ...')
     if good_ids_S_red is not None:
         c = 0                         
         for File in good_masterSR:   # [:len(good_masterQ)]
             star_data_red = add_tau_delflx(File, inDir_S, star_data_red)      
             c += 1               
             if c % 5 == 0:
-                pers = (100.0*c) / float(len(good_masterSR))
-                print('\r----- Already read %d%% of Red Stars'%pers),          
-    
-
+                progress  = (100.0*c) / float(len(good_masterSR))
+                update_progress(progress)         
+                
     if good_ids_S_red is not None:
         return  qso_data, star_data_blue, star_data_red
     else: 
