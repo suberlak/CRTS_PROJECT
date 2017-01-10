@@ -235,11 +235,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
         star_data_red  = [delflx_S, tau_S, err_S, master_acc_list_S]
     
     ### READ IN QUASARS ### 
-    
+    print('\n')
     print('Reading in quasars...')
     if redshift is not None: 
       # correcting QSO delta_time to restframe
-      print('\n')
       print('Correcting delta_time to restframe, t_rest = t_obs / (1+z)')
       c = 0
       for i in range(len(good_masterQ)): #  len(masterFiles_Q)
@@ -254,7 +253,6 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
               #print('\r----- Already read %d%% of qso'%pers),
     else:
       # returning delta_time in observed frame 
-      print('\n')
       print('Returning delta_time in observed frame, t_obs')
       c = 0
       for File in good_masterQ: #  len(masterFiles_Q)
@@ -291,7 +289,7 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
             if c % 5 == 0:
                 progress  = (100.0*c) / float(len(good_masterSR))
                 update_progress(progress)         
-                
+
     if good_ids_S_red is not None:
         return  qso_data, star_data_blue, star_data_red
     else: 
