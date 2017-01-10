@@ -280,8 +280,8 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
     ### READ IN RED STARS ###          
     
     print('\n')
-    print('Reading in red stars ...')
     if good_ids_S_red is not None:
+        print('Reading in red stars ...')
         c = 0                         
         for File in good_masterSR:   # [:len(good_masterQ)]
             star_data_red = add_tau_delflx(File, inDir_S, star_data_red)      
