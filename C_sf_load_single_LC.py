@@ -49,6 +49,9 @@ an incorrect filter was applied to  '../stars_CRTS_processing_err_w/'
 A major update : moving an entire project to a new location, making a new 
 directory structure to make everything more transparent.   
 
+01/17/2017
+A minor update : allowing PTF lightcurves to be processed as well 
+
 """
 
 import os
@@ -57,13 +60,6 @@ import sys
 
 from CRTS_paper_modules import update_progress  as upd 
 
-#def update_progress(progress):
-    ''' A simple function updating the time progress. 
-    
-    progress : a value (float or int) between 0 and 100 indicating 
-               percentage progress 
-    '''
-#    print('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
 
 # Read in the LC files : 
 # if the parameters are provided , from the user input
@@ -78,26 +74,33 @@ from CRTS_paper_modules import update_progress  as upd
 #    if objType == 'stars' : start = 4 ; end = -4
 #    
 
-# Read in the LC files  if there is no user input 
-#if len(args) == 1 :
 
-
-# CHOOSE HERE WHETHER WE SHOULD CRUNCH  STELLAR OR QSO  
+# CHOOSE HERE WHETHER WE SHOULD USE  STELLAR OR QSO  
 # LIGHTCURVES TO MAKE MASTER FILES ! 
-choice = 'qso'
-if choice == 'stars':
-    inDir =  '../proc_LC_CRTS/stars/'
-    start= 4
+
+choice = 'stars'
+survey  = 'PTF' # or  'CRTS'
+
+inDir =  '../proc_LC_'+survey+'/'+choice+'/'
+
+# define here how many characters from each 
+# processed lightcurve are reduntant , eg
+# 'out_#######.txt'  has start=4  end = -4 
+
+if survey == 'CRTS' and choice == 'stars' : 
+    start = 4
     end=  -8
-    
-if choice == 'qso' :
-    inDir = '../proc_LC_CRTS/qso/'  
+
+if survey == 'CRTS' and choice == 'qso' : 
     start= 4
     end=  -4
     
-
+if survey == 'PTF' : # same for both stars and quasars... 
+    start = 0
+    end = -4 
+  
 # regardless of choice, outDir stays the same 
-outDir = '../data_products/sf_file_per_LC/' +choice+'/'
+outDir = '../data_products/sf_file_per_LC_'+survey+'/' +choice+'/'
 
 # Check if the directory for output exists, and if not, make one 
 if not os.path.exists(outDir): os.system('mkdir %s' % outDir) 
@@ -155,21 +158,9 @@ for i in range(len(inFiles)):
     # grab the object name
     obj_name = file[start:end]
     
-    # Make arrays that repeat the LC stats 
-    # ID_arr = np.array(len(tau)*[file[start:end]])
-    #avg_mag_arr = np.ones_like(tau, dtype=float) * np.mean(flx4)
-    #avg_err_arr = np.ones_like(tau,dtype=float) * np.mean(err)    
-    #avg_err_hold   = np.append(avg_err_hold, avg_err_arr)
-    #avg_mag_hold   = np.append(avg_mag_hold, avg_mag_arr)
- 
     ##### FILE SAVING #######
     DATA = np.column_stack((delflx,tau, delflxerr))    
     outfile = outDir + 'SF_' + obj_name + '.txt'
     np.savetxt(outfile, DATA, delimiter =' ', fmt="%s") 
-
-    #sys.stdout.write('\nProcessing LC %d out of %d \r' % (i, len(inFiles)))
-    #sys.stdout.flush()
-    #sys.stdout.write('\nSaving... %s \n'% outfile)
-    #sys.stdout.flush()
-       
+      
 print('\nAll in all, we saved %d SF files ' % (count))  

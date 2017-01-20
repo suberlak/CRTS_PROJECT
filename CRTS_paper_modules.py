@@ -64,7 +64,7 @@ def get_stars_catalog():
 
 # Perform cuts 
 def cut_qso(qso_cat=None, mMin=-9, mMax=19,   
-            mErrMin = -9, mErrMax = 0.3,cut_mag='r', redshift = None, match_deg_rad = 1.0 / 3600):
+            mErrMin = -9, mErrMax = 0.3,cut_mag='r', redshift = None, match_radius_arcsec = 2.0 , survey='CRTS'):
     ''' A short  routine to select CRTS quasars according to desired parameters.
     
     Parameters:
@@ -72,13 +72,13 @@ def cut_qso(qso_cat=None, mMin=-9, mMax=19,
     qso_cat  - a CRTS-SDSS matched catalog, the output of get_qso_catalog()
     mMin / mMax - minimum / maximum  desired magnitude , of SDSS filter specified 
               by cut_mag  
-    mErrMin - minimum / maximum  desired average CRTS lightcurve error, after 
+    mErrMin / mErrMax - minimum / maximum  desired average CRTS/PTF lightcurve error, AFTER 
               day-averaging 
     cut_mag - desired SDSS filter for the cut,  allowed values  are u,g,r,i,z. 
               Default setting is 'r' 
-    match_deg_rad  - a maximum matching radius allowed  - the CRTS-SDSS matched 
+    match_radius_arcsec  - a maximum matching radius  allowed   in arcsec - the CRTS-SDSS matched 
               catalog stores the matching radius in degrees. By default, we 
-              choose 1 arcsec , i.e. 1/3600 of a degree as an appropriate 
+              choose 2 arcsec , i.e. 2/3600 of a degree as an appropriate 
               matching radius for QSO.  For the CRTS sample, only 15 do not 
               have an SDSS counterpart within that range. 
 
@@ -86,25 +86,37 @@ def cut_qso(qso_cat=None, mMin=-9, mMax=19,
     --------
     qso_id : the CRTS id's of the quasars accepted  through the selection criteria 
     '''
-    print('Returning only QSO which had an SDSS counterpart within %f radians'%match_deg_rad)
-    mask_rad = (qso_cat['m_ang_deg'].astype(float) < match_deg_rad)
-    mask_mag = (qso_cat[cut_mag].astype(float) > mMin) * (qso_cat[cut_mag].astype(float) < mMax) 
-    mask_err = (qso_cat['CRTS_avg_e'].astype(float) > mErrMin) * (qso_cat['CRTS_avg_e'].astype(float) < mErrMax)
-    mask = mask_rad * mask_mag * mask_err 
-    qso_id = qso_cat['CRTS_id'][mask]
+    print('\n Returning only QSO with  an SDSS counterpart within %f arcsec'%match_radius_arcsec)
+    
+    if survey  == 'CRTS' : 
+        match_radius_degrees = match_radius_arcsec / 3600.0 
+        mask_rad = (qso_cat['m_ang_deg'].astype(float) < match_radius_degrees )
+        mask_mag = (qso_cat[cut_mag].astype(float) > mMin) * (qso_cat[cut_mag].astype(float) < mMax) 
+        mask_err = (qso_cat['CRTS_avg_e'].astype(float) > mErrMin) * (qso_cat['CRTS_avg_e'].astype(float) < mErrMax)
+        mask = mask_rad * mask_mag * mask_err 
+        qso_id = qso_cat['CRTS_id'][mask]
+    
+    if survey =='PTF':
+        mask_rad = (qso_cat['match_radius_arcsec'] < match_radius_arcsec )
+        mask_mag = (qso_cat[cut_mag] > mMin) * (qso_cat[cut_mag] < mMax)
+        mask_err = (qso_cat['avg_day_err']> mErrMin) * (qso_cat['avg_day_err'] < mErrMax)
+        mask = mask_rad * mask_mag * mask_err 
+        qso_id = qso_cat['ra_sdss'][mask]
+
+
     print('\n These cuts reduced the number of qso  in the sample from %d to %d' %
         (len(qso_cat['redshift']), len(qso_id)))
           
 
     if redshift is not None:
-        print('Also returning quasar redshifts...')
+        print('\n  Also returning quasar redshifts...')
         qso_redshift = np.array(qso_cat['redshift'][mask]).astype(float)
         return qso_id, qso_redshift 
     else:
         return  qso_id
 
 def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9, 
-              mErrMax = 0.3, gi_Min = -1, gi_Max=1 , cut_mag='r_mMed'):
+              mErrMax = 0.3, gi_Min = -1, gi_Max=1 , cut_mag='r_mMed', survey='CRTS'):
     ''' A short  routine to select CRTS stars according to desired parameters.
     
     Parameters:
@@ -123,17 +135,28 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
     --------
     qso_id : the CRTS id's of the quasars accepted  through the selection criteria 
     '''
+    print('\nChoosing stars with  SDSS   %.2f<g-i<%.2f'%(gi_Min, gi_Max))
     mask_mag = (star_cat[cut_mag] > mMin) * (star_cat[cut_mag] < mMax) 
-    mask_err = (star_cat['CRTS_Merr'] > mErrMin) * (star_cat['CRTS_Merr'] < mErrMax)
     SDSS_gi = star_cat['g_mMed'] - star_cat['i_mMed']
     mask_color = (SDSS_gi > gi_Min ) * (SDSS_gi < gi_Max)
-    mask = mask_mag * mask_err * mask_color
-    star_id_f = star_cat['crts_id'][mask]
+    
+    if survey == 'CRTS' : 
+        mask_err = (star_cat['CRTS_Merr'] > mErrMin) * (star_cat['CRTS_Merr'] < mErrMax)
+        mask = mask_mag * mask_err * mask_color
+        star_id_f = star_cat['crts_id'][mask]
  
-    # convert floats to strings without comma and zeros
-    star_id = np.array(["{:.0f}".format(name) for name in star_id_f])
-    print('\n These cuts reduced the number of stars  in the sample from %d to %d'%
-        (len(star_cat['CRTS_M']),  len(star_id)))
+        # convert floats to strings without comma and zeros
+        star_id = np.array(["{:.0f}".format(name) for name in star_id_f])
+        print(' These cuts reduced the number of stars  in the sample from %d to %d'%
+            (len(star_cat['CRTS_M']),  len(star_id)))
+
+    if survey == 'PTF' : 
+        mask_err = (star_cat['avg_day_err'] > mErrMin) * (star_cat['avg_day_err'] < mErrMax)
+        mask = mask_mag * mask_err * mask_color
+        star_id = star_cat['ra_sdss'][mask]
+        print(' These cuts reduced the number of stars  in the sample from %d to %d'%
+            (len(star_cat['ra_sdss']),  len(star_id)))
+
     return  star_id
 
 
@@ -186,7 +209,7 @@ def add_tau_delflx(File, inDir, data, z=None):
 def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
                  good_ids_QSO, good_ids_S_red=None, redshift=None):
     ''' A routine to read the delta_mag (xi), delta_time (tau), and error (ei) 
-    for CRTS stars and quasars. Stars and quasar master files are read from 
+    for CRTS / PTF stars and quasars. Stars and quasar master files are read from 
     inDirStars and inDirQSO , and only those files are selected to be read in 
     that are on the list of good_ids_S_blue, good_ids_S_red  for blue 
     and red stars, and good_ids_QSO  for quasars.  
@@ -209,10 +232,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
         good_masterSR = np.array(masterFiles_S)[np.in1d(masterFilesS1, good_ids_S_red)]
     
     # Read the QSO Master file names 
-    #masterFiles_Q = os.listdir(inDir_Q)
-    #masterFilesQ1 = [name[3:-4] for name in masterFiles_Q]
-    #good_masterQ =  np.array(good_ids_QSO) #np.array(masterFiles_Q)[np.in1d(masterFilesQ1, good_ids_QSO)]
-    good_masterQ = np.array(['SF_' +qso+'.txt' for qso in good_ids_QSO])
+    masterFiles_Q = os.listdir(inDir_Q)
+    masterFilesQ1 = [name[3:-4] for name in masterFiles_Q]
+    good_masterQ =  np.array(masterFiles_Q)[np.in1d(masterFilesQ1, good_ids_QSO)]
+    #good_masterQ = np.array(['SF_' +qso+'.txt' for qso in good_ids_QSO])
 
     # If no previous read-in xi, ei exists, initialize arrays    
     print('making new delflx, tau, xi arrays')

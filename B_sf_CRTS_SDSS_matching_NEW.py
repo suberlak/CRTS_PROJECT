@@ -220,6 +220,37 @@ def convert_to_deg(ra_split, dec_split):
     
 
 def match_catalogs(cat1_ra, cat1_dec, cat2_ra, cat2_dec):
+    '''
+    A quick convenience function wrapping the astropy 
+    match_to_catalog_sky()  routine, used to 
+    positionally match two catalogs based 
+    on ra, dec  (2D matching).  
+
+    Input: 
+    -------------
+    cat1_ra, cat1_dec, cat2_ra, cat2_dec : all these 
+        coordinates are expected as decimal degrees, i.e. 
+        ra in (0.0,360.0), dec in (-90.0,+90.0)
+
+    Output:
+    -------------
+    idx : indices that match catalog2  to catalog1 : 
+        catalog1[ra]  - catalog2[ra][idx] ~= 0 
+        In other words, one can make a joint catalog by taking
+       catalog1,  and adding catalog2 at idx,  because all rows
+        of catalog1 are assumed to have a matching object in 
+        catalog2.  
+    sep2d : match_radius  : it's an AstroPy object of class Angle. 
+        >>  sep2d.unit   :  shows it's  in degrees 
+        >>  sep2d.value  : yields value of  separation in degrees  
+                           for each matched entry of catalog1 against 
+                           catalog2
+                            
+    For more info, check the routine docs: 
+    http://docs.astropy.org/en/stable/api/astropy.coordinates.
+    SkyCoord.html#astropy.coordinates.SkyCoord.match_to_catalog_sky
+
+    '''
     from astropy import units as u
     from astropy.coordinates import SkyCoord
     cat1 = SkyCoord(ra=cat1_ra*u.degree, dec=cat1_dec*u.degree)
@@ -320,7 +351,7 @@ def match_stars(purge_pickle=True):
   
     archive_file_matching = '../data_products/CRTS_SDSS_stars_matched_rows_radii.npz'
     if not os.path.exists(archive_file_matching) or purge_pickle :
-        print '\n- Computing the SDSS matching rows to CRTS stars'
+        print('\n- Computing the SDSS matching rows to CRTS stars')
           #     Load data from SDSS
         sdss_star_data =  load_sdss_stars()
         SDSS_matching_rows , matched_radius= match_catalogs(cat1_ra=ra_deg_CRTS, 
@@ -335,8 +366,7 @@ def match_stars(purge_pickle=True):
     else:
         
         sdss_star_data =  load_sdss_stars()
-        print '\n- Using precomputed SDSS rows matched to CRTS stars from'
-        print archive_file_matching
+        print('\n- Using precomputed SDSS rows matched to CRTS stars from %s '%archive_file_matching)
         archive =np.load(archive_file_matching)
         SDSS_matching_rows= archive['SDSS_matching_rows']
         match_angle_deg = archive['match_angle_deg']
@@ -374,7 +404,7 @@ def match_stars(purge_pickle=True):
     print('Saving the SDSS-CRTS cross-matched stars catalog...')
     
     archive_SDSS_CRTS = '../data_products/CRTS_SDSS_cross_matched_stars_catalog.txt' 
-    print 'to' , archive_SDSS_CRTS
+    print('to %s'% archive_SDSS_CRTS)
     keys = colnames
     DATA = np.column_stack((datatable))    
     
@@ -466,8 +496,7 @@ def match_quasars(catalog, purge_pickle=True):
                 pers = (100.0*c) / float(length)
                 print('\r----- Already read %d%% of QSO '%pers), 
 
-        print '\nSaving the results of all LC parameters for CRTS quasars to...'
-        print archive_file   
+        print('\nSaving the results of all LC parameters for CRTS quasars to...%s'%archive_file)
         np.savez(archive_file, avg_mag=avg_mag, avg_err=avg_err, ra_ls=ra_ls, 
                  dec_ls=dec_ls, mjd_span=mjd_span, mjd_uniq_N=mjd_uniq_N, 
                  N_rows=N_rows )   
@@ -508,7 +537,7 @@ def match_quasars(catalog, purge_pickle=True):
         print('\n- Saved the SDSS-CRTS quasars matched rows to %s'%archive_file_matching)
    
     else:
-        print('\n- Using precomputed SDSS rows matched to CRTS quasars from %s' archive_file_matching)
+        print('\n- Using precomputed SDSS rows matched to CRTS quasars from %s'% archive_file_matching)
         archive =np.load(archive_file_matching)
         SDSS_matching_rows = archive['SDSS_matching_rows']
         match_angle_deg = archive['match_angle_deg']
@@ -611,6 +640,6 @@ def match_quasars(catalog, purge_pickle=True):
     return data_qso_SDSS_CRTS, match_angle_deg
 
 # Call all the necessary functions
-sdss_star_data  = match_stars(purge_pickle=True) 
-crts, radi = match_quasars(catalog='DB_QSO', purge_pickle=True)  # or 'master_qso',  's82drw'
+#sdss_star_data  = match_stars(purge_pickle=True) 
+#crts, radi = match_quasars(catalog='DB_QSO', purge_pickle=True)  # or 'master_qso',  's82drw'
 
