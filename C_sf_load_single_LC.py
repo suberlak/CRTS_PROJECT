@@ -122,39 +122,38 @@ for i in range(len(inFiles)):
     file = str(inFiles[i])
 
     # load the mjd, flux, and flux_error  from the read file 
-    mjd,flx4,err = np.loadtxt(inDir+'%s' % (file),usecols=(0,1,2),unpack=True)
+    mjd,flx,err = np.loadtxt(inDir+'%s' % (file),usecols=(0,1,2),unpack=True)
     
     # check for any nan's...
-    add = np.where(np.isnan(flx4) == True)[0]
+    add = np.where(np.isnan(flx) == True)[0]
    
     # Delete all rows with nan's - there should be none in files I provide.. 
-    mjd = np.delete(mjd,add); flx4 = np.delete(flx4,add); err = np.delete(err,add)
+    mjd = np.delete(mjd,add); flx = np.delete(flx,add); err = np.delete(err,add)
         
     # Sort according to mjd's 
     ind = np.argsort(mjd)
-    mjd = mjd[ind]; flx4 = flx4[ind]; err = err[ind]
+    mjd = mjd[ind]; flx = flx[ind]; err = err[ind]
     
     # Calculate tau, mag difference and err difference for each pair (k,j), 
     # where tau=t_j-t_k (j>k) 
 
-    delflx2  = []; delflx = [];  delflxerr = []; tau = []
+    delflx = [];  delflxerr = []; tau = []
     for j in range(len(mjd)-1):
         for k in range(j+1):     
             tau.append(mjd[j+1]-mjd[k])  # j from 1 and k<j
+            delflx.append((flx[k]-flx[j+1]))
             noise2 = err[k]**2+err[j+1]**2 
-            delflx.append((flx4[k]-flx4[j+1]))
-            delflx2.append((flx4[k]-flx4[j+1])**2.0)
             delflxerr.append((noise2)**0.5)  
             
     # Change lists to arrays..         
-    tau = np.array(tau); delflx = np.array(delflx)
-    delflx2 = np.array(delflx2);   delflxerr = np.array(delflxerr) 
-    
+    tau = np.array(tau); delflx = np.array(delflx)   
+    delflxerr = np.array(delflxerr) 
+   
     # sort according to tau
     int0 = np.argsort(tau)
     tau = tau[int0]; delflx = delflx[int0]
-    delflx2 = delflx2[int0]; delflxerr = delflxerr[int0]
-    
+    delflxerr = delflxerr[int0]
+  
     # grab the object name
     obj_name = file[start:end]
     

@@ -263,6 +263,7 @@ def match_catalogs(cat1_ra, cat1_dec, cat2_ra, cat2_dec):
     
 def match_stars(purge_pickle=True):
     # load names from CRTS
+    # using the CRTS day-averaged (processed) lightcurves ... 
     DIR = crts_dirs[1]
     crts_star_names, crts_star_radec = load_crts_stars(DIR)
      
@@ -282,35 +283,31 @@ def match_stars(purge_pickle=True):
         dec_ls =[]
         crts_id=[]
         mjd_span=[]
-        mjd_uniq_N=[]
-        N_rows= []
+        N_rows= []  # this is the same as number of days of obs since it is day-averaged! 
         c=0
         for i in range(length):
             file = str(crts_star_names[i])
             #print '\nCRTS stars file ',i, 'out of',  length
             mjd,flx4,err = np.loadtxt(DIR+'%s' % (file),usecols=(0,1,2),unpack=True)
-            # 1) Average brightness per LC
+            # 1) Average brightness per day-averaged LC
             avg_mag.append(np.mean(flx4))
             
-            # 2) Average error per LC
+            # 2) Average error per day-averaged LC
             avg_err.append(np.mean(err))
             
             # 3) Delta_MJD : span in days between final and first day
             mjd_span.append(int(mjd.max()-mjd.min()))  
             
-            # 4) N_MJD : number of days (i.e. taking the integer part of mjd 
-            # date and picking only those that are unique)
-            unique_mjds = np.unique([int(day) for day in mjd])
-            mjd_uniq_N.append(len(unique_mjds))  # number of days observed 
-            
-            # 5) N_rows : number of rows per LC 
+            # 4) N_rows : number of rows per LC 
+            # identical to the number of day-averaged epochs, 
+            # i.e. number of days of observations ... 
             N_rows.append(len(mjd))
             
-            # 6) CRTS ID  
+            # 5) CRTS ID  
             crts_id_i= float(crts_star_names[i][4:-8])
             crts_id.append(crts_id_i)
             
-            # 7) CRTS  ra and dec for that object 
+            # 6) CRTS  ra and dec for that object 
             name_mask = crts_star_radec['CRTS_ID'] == crts_id_i
             ra_ls.append(crts_star_radec['ra'][name_mask][0])
             dec_ls.append(crts_star_radec['dec'][name_mask][0])#
@@ -324,12 +321,11 @@ def match_stars(purge_pickle=True):
         print(archive_file)
 
         np.savez(archive_file, avg_mag=avg_mag, avg_err=avg_err, ra_ls=ra_ls, 
-                 dec_ls=dec_ls, crts_id=crts_id, mjd_span=mjd_span, 
-                 mjd_uniq_N=mjd_uniq_N, N_rows=N_rows )   
+                 dec_ls=dec_ls, crts_id=crts_id, mjd_span=mjd_span, N_rows=N_rows )   
                  
     else: 
         print('\n- Using precomputed LC parameters (avg_mag, err, ra,dec, crts_id, ',\
-        ' mjd_span, mjd_uniq_N, N_rows) for CRTS stars from ...')
+        ' mjd_span, N_rows) for CRTS stars from ...')
         print(archive_file)
         archive = np.load(archive_file)
         avg_mag    = archive['avg_mag']
@@ -338,7 +334,6 @@ def match_stars(purge_pickle=True):
         dec_ls     = archive['dec_ls']
         crts_id    = archive['crts_id']
         mjd_span   = archive['mjd_span']
-        mjd_uniq_N = archive['mjd_uniq_N']
         N_rows     = archive['N_rows']
     # My CRTS coordinates are already in  degrees...    
     ra_deg_CRTS = ra_ls
@@ -381,10 +376,10 @@ def match_stars(purge_pickle=True):
                          dec_deg_CRTS, ra_deg_CRTS, sdss_star_data['g_Nobs'][ind], 
                         sdss_star_data['g_mMed'][ind], sdss_star_data['r_mMed'][ind],
                         sdss_star_data['i_mMed'][ind],
-                        crts_id, mjd_span, mjd_uniq_N, N_rows,match_angle_deg ])
+                        crts_id, mjd_span, N_rows,match_angle_deg ])
     colnames = ['CRTS_M','CRTS_Merr', 'dec_SDSS', 'ra_SDSS', 'dec_CRTS',
                 'ra_CRTS', 'g_Nobs', 'g_mMed','r_mMed', 'i_mMed', 'crts_id', 'mjd_span', 
-                'mjd_N', 'N_rows', 'm_ang_deg']
+                 'N_rows', 'm_ang_deg']
     
 #    colnames = ['calib_fla', 'ra', 'dec', 'raRMS', 'decRMS', 'nEpochs', 'AR_val', 
 #                'u_Nobs', 'u_mMed', 'u_mMean', 'u_mErr', 'u_rms_scatt', 'u_chi2',
@@ -441,6 +436,7 @@ def match_quasars(catalog, purge_pickle=True):
               
     '''
     # load names from CRTS 
+    # the day-averaged processed lightcurves 
     DIR = crts_dirs[0]
     crts_qso_names = load_crts_qso(DIR)
     
@@ -459,7 +455,6 @@ def match_quasars(catalog, purge_pickle=True):
         ra_ls =[]
         dec_ls=[]
         mjd_span = []
-        mjd_uniq_N = []
         N_rows = []        
         
         c=0
@@ -476,16 +471,13 @@ def match_quasars(catalog, purge_pickle=True):
             
             # 3) Delta_MJD : span in days between final and first day
             mjd_span.append(int(mjd.max()-mjd.min()))  
-            
-            # 4) N_MJD : number of days (i.e. taking the integer part of mjd 
-            # date and picking only those that are unique)
-            unique_mjds = np.unique([int(day) for day in mjd])
-            mjd_uniq_N.append(len(unique_mjds))  # number of days observed 
-            
-            # 5) N_rows : number of rows per LC 
+             
+            # 4) N_rows : number of rows per LC 
+            # identical to the number of day-averaged epochs, 
+            # i.e. number of days of observations ... 
             N_rows.append(len(mjd))
             
-            # 6) CRTS  ra and dec for that object ( no  need to pull ra, dec 
+            # 5) CRTS  ra and dec for that object ( no  need to pull ra, dec 
             # from a separate file, matching by name, because the qso name
             # already includes that... )
             ra_ls.append(file[4:13])
@@ -498,12 +490,11 @@ def match_quasars(catalog, purge_pickle=True):
 
         print('\nSaving the results of all LC parameters for CRTS quasars to...%s'%archive_file)
         np.savez(archive_file, avg_mag=avg_mag, avg_err=avg_err, ra_ls=ra_ls, 
-                 dec_ls=dec_ls, mjd_span=mjd_span, mjd_uniq_N=mjd_uniq_N, 
-                 N_rows=N_rows )   
+                 dec_ls=dec_ls, mjd_span=mjd_span, N_rows=N_rows )   
                  
     else: 
         print('\n - Using precomputed LC parameters (avg_mag, err, ra,dec, crts_id, ',\
-        ' mjd_span, mjd_uniq_N, N_rows) for CRTS quasars  from ...')
+        ' mjd_span, N_rows) for CRTS quasars  from ...')
     
         archive = np.load(archive_file)
         avg_mag    = archive['avg_mag']
@@ -511,7 +502,6 @@ def match_quasars(catalog, purge_pickle=True):
         ra_ls      = archive['ra_ls']
         dec_ls     = archive['dec_ls']
         mjd_span   = archive['mjd_span']
-        mjd_uniq_N = archive['mjd_uniq_N']
         N_rows     = archive['N_rows']
        
     # Split CRTS  ra, dec from hms to h m s 
@@ -565,10 +555,9 @@ def match_quasars(catalog, purge_pickle=True):
         datatable=np.array([avg_mag, avg_err, sdss_qso_data['M_i'][ind], 
                           sdss_qso_data['redshift'][ind], sdss_qso_data['ra'][ind], 
                           sdss_qso_data['dec'][ind], ra_deg_CRTS, dec_deg_CRTS,
-                          mjd_span, mjd_uniq_N, N_rows])
+                          mjd_span, N_rows])
         colnames = ['CRTS_avg_mag','CRTS_avg_err','M_i', 'redshift', 'dec_CRTS',
-                    'ra_CRTS',  'dec_SDSS','ra_SDSS', 'mjd_span', 'mjd_uniq_N',
-                    'N_rows']
+                    'ra_CRTS',  'dec_SDSS','ra_SDSS', 'mjd_span', 'N_rows']
         # NOTE: colnames is read from the right....
     if catalog == 'DB_QSO' :
         datatable=np.array([crts_qso_names_radec, avg_mag, avg_err, sdss_qso_data['z'][ind], 
@@ -576,10 +565,10 @@ def match_quasars(catalog, purge_pickle=True):
                           sdss_qso_data['g'][ind], sdss_qso_data['u'][ind], 
                           sdss_qso_data['redshift'][ind], sdss_qso_data['ra'][ind], 
                           sdss_qso_data['dec'][ind], ra_deg_CRTS, dec_deg_CRTS,
-                          mjd_span, mjd_uniq_N, N_rows, match_angle_deg])
+                          mjd_span, N_rows, match_angle_deg])
         colnames = ['CRTS_id','CRTS_avg_mag','CRTS_avg_err', 'z', 'i', 'r', 'g', 'u', 
                     'redshift', 'ra_SDSS', 'dec_SDSS', 'ra_CRTS', 'dec_CRTS', 
-                    'mjd_span', 'mjd_uniq_N', 'N_rows', 'm_ang_deg']
+                    'mjd_span', 'N_rows', 'm_ang_deg']
     if catalog == 'master_QSO' :
         datatable=np.array([avg_mag, avg_err, sdss_qso_data['u'][ind], 
                           sdss_qso_data['err_u'][ind], sdss_qso_data['g'][ind], 
@@ -588,11 +577,11 @@ def match_quasars(catalog, purge_pickle=True):
                           sdss_qso_data['err_i'][ind], sdss_qso_data['z'][ind], 
                           sdss_qso_data['err_z'][ind], sdss_qso_data['redshift'][ind], 
                           sdss_qso_data['ra'][ind], sdss_qso_data['dec'][ind], 
-                          ra_deg_CRTS, dec_deg_CRTS, mjd_span, mjd_uniq_N, N_rows])
+                          ra_deg_CRTS, dec_deg_CRTS, mjd_span, N_rows])
         colnames = ['CRTS_avg_mag','CRTS_avg_err', 'u', 'err_u', 'g', 'err_g',
                     'r', 'err_r', 'i', 'err_i', 'z','err_z', 
                     'redshift', 'ra_SDSS', 'dec_SDSS', 'ra_CRTS', 'dec_CRTS', 
-                    'mjd_span', 'mjd_uniq_N', 'N_rows']
+                    'mjd_span',  'N_rows']
 
     data_qso_SDSS_CRTS= {}
     print('\nZipping  quasars...')
