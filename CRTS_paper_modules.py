@@ -38,8 +38,73 @@ def update_progress(progress):
     sys.stdout.write('\r[%-10s] %0.2f%%' % ('#' * int(progress/10), progress),)
     sys.stdout.flush()
 
+
+##############################
+# CONVERT RA DEC TO DEGREES  #
+##############################
+
+def get_ra_dec_CRTS(ra_hms, dec_hms):
+    """
+    Extracting RA, DEC information from the QSO  name for the CRTS case 
+    """
+    
+    dec_hms_split = np.empty(0, dtype=str)
+    for i in range(0,len(dec_hms)):
+        dec_hms_split = np.append(dec_hms_split,  dec_hms[i][0:3]+' '+dec_hms[i][3:5]+' '+dec_hms[i][5:9])
+    
+    
+    ra_hms_split = np.empty(0, dtype=str)
+    for i in range(0,len(ra_hms)):
+        ra_hms_split = np.append(ra_hms_split, ra_hms[i][0:2]+' '+ ra_hms[i][2:4] + ' ' + ra_hms[i][4:9])
+    return ra_hms_split, dec_hms_split
+     
+def HMS2deg(ra='', dec=''):
+    """
+    From http://www.bdnyc.org/2012/10/15/decimal-deg-to-hms/  
+    Converting  ra and dec from h:m:s   and deg:m:s  to  degrees.decimal 
+    I assume they are using ICRS coordinates 
+    """
+    RA, DEC, rs, ds = '', '', 1, 1
+    if dec:
+        D, M, S = [float(i) for i in dec.split()]
+        if str(D)[0] == '-':
+            ds, D = -1, abs(D)
+        deg = D + (M/60) + (S/3600)
+        DEC = '{0}'.format(deg*ds)
+      
+    if ra:
+        H, M, S = [float(i) for i in ra.split()]
+        if str(H)[0] == '-':
+            rs, H = -1, abs(H)
+        deg = (H*15) + (M/4) + (S/240)
+        RA = '{0}'.format(deg*rs)
+      
+    if ra and dec:
+        return (RA, DEC)
+    else:
+        return RA or DEC
+    
+    
+def convert_to_deg(ra_split, dec_split):
+    '''
+    Converts ra and dec from h:m:s  extracted from the quasar name with 
+    get_ra_dec_CRTS()  to  degrees.decimal , using HMS2deg() function
+    '''
+    ra_deg  =   np.empty(0, dtype=float)
+    dec_deg =   np.empty(0, dtype=float)
+    
+    for i in range(0,len(dec_split)):
+        dec_deg = np.append(dec_deg,float(HMS2deg(dec=dec_split[i])))
+    
+    
+    for i in range(0,len(ra_split)):
+        ra_deg = np.append(ra_deg,float(HMS2deg(ra=ra_split[i])))
+    return ra_deg , dec_deg
+    
+
+    
 def get_qso_catalog():
-    File = '../data_products/CRTS_SDSS_cross_matched_qso_DB_QSO_catalog.txt'
+    File = '../data_products/CRTS_SDSS_catalogs/CRTS_SDSS_cross_matched_qso_DB_QSO_catalog.txt'
     colnames = open(File,'r').read().splitlines()[0][1:].split()
     datatable = np.genfromtxt(File, dtype=str)
     qso_catalog = {}
@@ -51,7 +116,7 @@ def get_qso_catalog():
     return  colnames, qso_catalog
     
 def get_stars_catalog():
-    File = '../data_products/CRTS_SDSS_cross_matched_stars_catalog.txt'
+    File = '../data_products/CRTS_SDSS_catalogs/CRTS_SDSS_cross_matched_stars_catalog.txt'
     colnames = open(File,'r').read().splitlines()[0][1:].split()
     datatable = np.genfromtxt(File)
     stars_catalog = {}
