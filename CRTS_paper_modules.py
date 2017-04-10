@@ -225,6 +225,106 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
     return  star_id
 
 
+def faster_read_xi_ei(inDirSF = None, good_ids = None , detailed = None ):
+    ''' A trimmed down version of fast_read_xi_ei : there is no  need really
+    to have all variables as input : it is conceptually easier to 
+    call a simple function three times, than to make a function three 
+    times as complicated.  Plus,  that way we don't necessarily have 
+    to be reading qso, starsR , or starsR : it could be stars, 
+    or just qso, or only starsR...   Using the same engine as fast_read_xi_ei(), 
+    so speed of execution should be the same . 
+   
+    Parameters: 
+    -----------
+    inDirSF : a directory where we can find the 'master' files.  Whether it should point to the 'simple'
+          or 'detailed' master files, is up to user. Examples:   
+          inDirSF = '../data_products/sf_file_per_LC/stars/'
+          inDirSF = '../data_products/sf_file_per_LC/qso/' 
+          inDirSF = '../data_products/sf_file_per_LC/stars_detailed/'
+          inDirSF = '../data_products/sf_file_per_LC/qso_detailed/'
+          inDirSF = '../data_products/sf_file_per_LC_PTF/stars/'
+          inDirSF = '../data_products/sf_file_per_LC_PTF/qso/' 
+    good_ids : a list of object names for which we should read in the master files. 
+        We assume that each   master file is called    'SF_' + name + '.txt'
+    detailed =  if not None,  then apart from three standard columns in master files 
+         (delta_time,  delta_mag,  error(delta_mag)),  we also expect   t1, t2,  m1, m2,  e1,  e2, 
+          i.e. all the data taht was used to prepare master files...     
+
+    Returns :
+    ----------
+    store : a dictionary with keys corresponding to nonzero either  xi, tau, ei, or  that plus 
+          t1, t2,  m1, m2,  e1,  e2,  eg. 
+
+          store = {'xi':xi_flat, 'tau':tau_flat, 'ei':ei_flat}
+          or 
+          store = {'xi':xi_flat, 'tau':tau_flat, 'ei':ei_flat, 't1':t1_flat, 
+                   't2':t2_flat, 'm1': m1_flat, 'm2':m2_flat, 'e1':e1_flat, 'e2': e2_flat}
+
+    '''
+    # rename some variables to slim the code 
+    ids, inDir =  good_ids, inDirSF
+    print('\nReading in tau,xi,ei  for %d objects'%len(good_ids))
+    
+
+    # initialize storage arrays... 
+    tau_store = list(np.zeros(len(ids)))
+    xi_store = list(np.zeros(len(ids)))
+    ei_store = list(np.zeros(len(ids)))
+    
+    if detailed is not None : 
+        t1_store = list(np.zeros(len(ids)))
+        t2_store = list(np.zeros(len(ids)))
+        e1_store = list(np.zeros(len(ids)))
+        e2_store = list(np.zeros(len(ids)))
+        m1_store = list(np.zeros(len(ids)))
+        m2_store = list(np.zeros(len(ids)))
+
+    # loop over all master files .. 
+    c = 0
+
+    for i in range(len(ids)) : 
+        File = 'SF_' + ids[i] +'.txt'
+        address = inDir+File
+        data =  np.loadtxt(address)
+
+        xi_store[i]  = data[:,0]
+        tau_store[i] = data[:,1]
+        ei_store[i]  = data[:,2]
+
+        if detailed is not None : 
+            t1_store[i] = data[:,3]
+            t2_store[i] = data[:,4]
+            m1_store[i] = data[:,5]
+            m2_store[i] = data[:,6]
+            e1_store[i] = data[:,7]
+            e2_store[i] = data[:,8]
+      
+        c += 1 
+        if c % 5 == 0:
+            progress = (100.0*c) / float(len(ids))
+            update_progress(progress)
+
+    # flatten the arrays 
+    tau_flat = np.concatenate(tau_store)
+    xi_flat  = np.concatenate(xi_store)
+    ei_flat  = np.concatenate(ei_store)
+    if detailed is not None : 
+        t1_flat = np.concatenate(t1_store)
+        t2_flat = np.concatenate(t2_store)
+        m1_flat = np.concatenate(m1_store)
+        m2_flat = np.concatenate(m2_store)
+        e1_flat = np.concatenate(e1_store)
+        e2_flat = np.concatenate(e2_store)
+
+    # assign them to the output dic.  
+    if detailed is None : 
+        store = {'xi':xi_flat, 'tau':tau_flat, 'ei':ei_flat}
+    elif detailed is not None : 
+        store = {'xi':xi_flat, 'tau':tau_flat, 'ei':ei_flat, 't1':t1_flat, 
+        't2':t2_flat, 'm1': m1_flat, 'm2':m2_flat, 'e1':e1_flat, 'e2': e2_flat}
+
+    print('\nFinished reading all master files for the selected objects ...')
+    return store 
 
 def fast_read_xi_ei(inDirStars = '../data_products/sf_file_per_LC/stars/', 
                     inDirQSO= '../data_products/sf_file_per_LC/qso/',  
