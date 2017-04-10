@@ -225,8 +225,106 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
     return  star_id
 
 
+
+def fast_read_xi_ei(inDirStars = '../data_products/sf_file_per_LC/stars/', 
+                    inDirQSO= '../data_products/sf_file_per_LC/qso/',  
+                    good_ids_S_blue = None , good_ids_S_red = None , good_ids_QSO = None, detailed = None ):
+    ''' A function combining what read_xi_ei and add_tau_delflx  would do much slower. 
+   
+    Parameters: 
+    -----------
+    inDirStars : by default, 
+    inDirQSO
+    good_ids_S_blue
+    good_ids_S_red
+    good_ids_QSO
+    
+    Returns :
+    ----------
+    store : a dictionary with keys corresponding to nonzero object lists provided as input. 
+    '''
+    store = {}   
+    
+    good_ids_list = [good_ids_S_blue, good_ids_S_red, good_ids_QSO]
+    obj_type = ['starsB', 'starsR', 'qso']
+    inDir_list = [inDirStars,inDirStars,inDirQSO]
+
+
+    for i in range(3) : 
+        good_ids = good_ids_list[i]
+        if good_ids is not None : 
+            obj = obj_type[i]
+            print('\nReading in tau,xi,ei for  %s'%obj)
+
+            ids = good_ids
+            inDir = inDir_list[i]
+
+            # initialize storage arrays... 
+            tau_store = list(np.zeros(len(ids)))
+            xi_store = list(np.zeros(len(ids)))
+            ei_store = list(np.zeros(len(ids)))
+            
+            if detailed is not None : 
+                t1_store = list(np.zeros(len(ids)))
+                t2_store = list(np.zeros(len(ids)))
+                e1_store = list(np.zeros(len(ids)))
+                e2_store = list(np.zeros(len(ids)))
+                m1_store = list(np.zeros(len(ids)))
+                m2_store = list(np.zeros(len(ids)))
+            # loop over all master files .. 
+            c = 0
+
+            for i in range(len(ids)) : 
+                File = 'SF_' + ids[i] +'.txt'
+                address = inDir+File
+                data =  np.loadtxt(address)
+
+                xi_store[i]  = data[:,0]
+                tau_store[i] = data[:,1]
+                ei_store[i]  = data[:,2]
+
+                if detailed is not None : 
+                    t1_store[i] = data[:,3]
+                    t2_store[i] = data[:,4]
+                    m1_store[i] = data[:,5]
+                    m2_store[i] = data[:,6]
+                    e1_store[i] = data[:,7]
+                    e2_store[i] = data[:,8]
+              
+                c += 1 
+                if c % 5 == 0:
+                    progress = (100.0*c) / float(len(ids))
+                    update_progress(progress)
+
+            # flatten the arrays 
+            tau_flat = np.concatenate(tau_store)
+            xi_flat  = np.concatenate(xi_store)
+            ei_flat  = np.concatenate(ei_store)
+            if detailed is not None : 
+                t1_flat = np.concatenate(t1_store)
+                t2_flat = np.concatenate(t2_store)
+                m1_flat = np.concatenate(m1_store)
+                m2_flat = np.concatenate(m2_store)
+                e1_flat = np.concatenate(e1_store)
+                e2_flat = np.concatenate(e2_store)
+
+            # assign them to the output dic. 
+            if detailed is None : 
+                store[obj] = [xi_flat, tau_flat, ei_flat]
+            elif detailed is not None : 
+                store[obj] = [xi_flat, tau_flat, ei_flat, t1_flat, t2_flat, 
+                              m1_flat, m2_flat, e1_flat, e2_flat]
+
+
+    print('\nFinished reading all master files for the selected objects ...')
+    return store 
+
+
+
+
+
 # inside the main loop : get tau, delflx from a master file, either qso or star
-def add_tau_delflx(File, inDir, data, z=None):
+def add_tau_delflx(File, inDir, data, z=None, tau_min = None, tau_max = None):
     ''' A function used by read_xi_ei() method to add delta_mag, delta_time, 
     and corresponding error err from an individual master file  
     to the list.
@@ -239,6 +337,14 @@ def add_tau_delflx(File, inDir, data, z=None):
 
     inDir : a directory where the master file should be found 
     data : a storage array with four fields, passed on from read_xi_ei() 
+    z : if not None, then we correct for redshift, using provided z. It should 
+         be a scalar corresponding to the object for which we are reading in 
+         xi, ei, tau points 
+
+    tau_min : if not None, a scalar corresponding to the min tau that we want to 
+         keep
+    tau_max : if not None, a scalar corresponding to the max tau that we want to 
+         keep
     
     Returns:
     ---------
@@ -249,36 +355,74 @@ def add_tau_delflx(File, inDir, data, z=None):
  
     '''
     # read in storage arrays
-    delflx = data[0]  
-    tau = data[1]
-    err = data[2]
-    master_acc_list = data[3]   
+    store_xi  = data[0]  
+    store_tau = data[1]
+    store_ei  = data[2]
+    store_object_list = data[3]   
     
     # grab the object name 
-    master_name = File[3:-4]
+    object_name = File[3:-4]
     
     # read in the i-th master file 
-    master =  np.genfromtxt(inDir+File, dtype=str)
-    
+    object_data =  np.genfromtxt(inDir+File, dtype=str)
+    file_xi  = object_data[:,0].astype(float)
+    file_tau = object_data[:,1].astype(float)
+    file_ei  = object_data[:,2].astype(float)
+
+    # introduce a mask, by default it accepts everything, 
+    # since time difference is definitely bigger than 0 ... 
+    m1 = 0 < file_tau
+    m2 = 0 < file_tau 
+
+    # take only xi,ei,tau corresponding to the desired range ...
+    if tau_min is not None: 
+        m1 = tau_min < file_tau 
+
+    if tau_max is not None : 
+        m2 = file_tau < tau_max 
+
+    m = m1 * m2 # combine the two masks 
+
     # read in tau,  del_mag,  del_mag_err for quasars on the list 
-    delflx = np.append(delflx, master[:,0].astype(float))
+    store_xi = np.append(store_xi, file_xi[m])
     if z is not None:
-        tau = np.append(tau, master[:,1].astype(float) / (1.0+z))
+        store_tau = np.append(store_tau,  file_tau[m] / (1.0+z))
     else:
-        tau = np.append(tau, master[:,1].astype(float))
-    err = np.append(err, master[:,2].astype(float))
-    master_names  = np.append(master_acc_list, np.array(len(master[:,0])*[master_name]))
+        store_tau = np.append(store_tau, file_tau[m])
+
+    store_ei = np.append(store_ei, file_ei[m])
+    store_object_list = np.append(store_object_list, np.array(len(file_xi[m])*[object_name]))
     
-    return delflx, tau, err, master_names
+    return store_xi, store_tau, store_ei, store_object_list
     
 def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
-                 good_ids_QSO, good_ids_S_red=None, redshift=None):
+                 good_ids_QSO, good_ids_S_red=None, redshift=None,tau_min = None, 
+                 tau_max = None):
     ''' A routine to read the delta_mag (xi), delta_time (tau), and error (ei) 
     for CRTS / PTF stars and quasars. Stars and quasar master files are read from 
     inDirStars and inDirQSO , and only those files are selected to be read in 
     that are on the list of good_ids_S_blue, good_ids_S_red  for blue 
     and red stars, and good_ids_QSO  for quasars.  
+
+    Parameters 
+    -----------
+    inDirStars : dir with stellar master files 
+    good_ids_S_blue : ids of stars within the cut
+    inDirQSO : dir with QSO master files 
+    good_ids_QSO : ids of QSO within a cut 
+ 
+    Optional Parameters :
+    ----------------------
+    good_ids_S_red=None :  if specified, only red stars would be read 
+    redshift=None : if not None,  then correcting QSOs for redshift ( expect an array of z )
+    tau_min , tau_max : if not None,  scalars corresponding to the limits on 
+         tau that we want to read-in from each master file 
     
+    Returns:
+    ---------
+    qso_data, star_data_blue, star_data_red : 1D arrays with [ xi, tau, ei,  name ]
+        per object type ... 
+
     '''           
     # use new names to make things code-compliant...      
     inDir_S = inDirStars
@@ -332,7 +476,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
       for i in range(len(good_masterQ)): #  len(masterFiles_Q)
           z = redshift[i]
           File = good_masterQ[i]
-          qso_data = add_tau_delflx(File,inDir_Q, qso_data, z)
+          if tau_min is not None : 
+              qso_data = add_tau_delflx(File,inDir_Q, qso_data, z, tau_min=tau_min, tau_max=tau_max)
+          else:
+              qso_data = add_tau_delflx(File,inDir_Q, qso_data, z)
           c += 1 
           if c % 5 == 0:
             progress = (100.0*c) / float(len(good_masterQ))
@@ -344,7 +491,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
       print('Returning delta_time in observed frame, t_obs')
       c = 0
       for File in good_masterQ: #  len(masterFiles_Q)
-          qso_data = add_tau_delflx(File,inDir_Q, qso_data)
+          if tau_min is not None :
+            qso_data = add_tau_delflx(File,inDir_Q, qso_data, tau_min=tau_min, tau_max=tau_max)
+          else: 
+            qso_data = add_tau_delflx(File,inDir_Q, qso_data)
           c += 1
           if c % 5 == 0:
             progress = (100.0*c) / float(len(good_masterQ))
@@ -359,7 +509,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
     print('Reading in blue stars ...')
     c = 0                   
     for File in good_masterSB:    # [:len(good_masterQ)]
-        star_data_blue = add_tau_delflx(File, inDir_S,star_data_blue)
+        if tau_min is not None : 
+          star_data_blue = add_tau_delflx(File, inDir_S,star_data_blue, tau_min=tau_min, tau_max=tau_max)
+        else: 
+          star_data_blue = add_tau_delflx(File, inDir_S,star_data_blue)
         c += 1 
         if c % 5 == 0:
             progress = (100.0*c) / float(len(good_masterSB))
@@ -372,7 +525,10 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
         print('Reading in red stars ...')
         c = 0                         
         for File in good_masterSR:   # [:len(good_masterQ)]
-            star_data_red = add_tau_delflx(File, inDir_S, star_data_red)      
+            if tau_min is not None : 
+                star_data_red = add_tau_delflx(File, inDir_S, star_data_red, tau_min=tau_min, tau_max=tau_max)    
+            else: 
+                star_data_red = add_tau_delflx(File, inDir_S, star_data_red) 
             c += 1               
             if c % 5 == 0:
                 progress  = (100.0*c) / float(len(good_masterSR))
