@@ -264,6 +264,7 @@ def faster_read_xi_ei(inDirSF = None, good_ids = None , detailed = None ):
     # rename some variables to slim the code 
     ids, inDir =  good_ids, inDirSF
     print('\nReading in tau,xi,ei  for %d objects'%len(good_ids))
+    print('\nUsing structure function master files from %s'%inDir)
     
 
     # initialize storage arrays... 
