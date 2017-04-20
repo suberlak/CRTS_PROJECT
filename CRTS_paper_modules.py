@@ -273,6 +273,7 @@ def faster_read_xi_ei(inDirSF = None, good_ids = None , detailed = None ):
     ei_store = list(np.zeros(len(ids)))
     
     if detailed is not None : 
+        print('\nReading in detailed SF : t1, t2, e1, e2, m1, m2')
         t1_store = list(np.zeros(len(ids)))
         t2_store = list(np.zeros(len(ids)))
         e1_store = list(np.zeros(len(ids)))
