@@ -20,8 +20,19 @@ Steps taken :
 - the before- and after-  day-averaging aggregate statistics catalogs are combined into one to ease comparison : CRTS_**_raw_and_proc_combined_agg.dat file, where ** stands for 'QSO' or 'stars'
 - using this catalog we make Fig 1 with statistics for day-averaged CRTS S82 QSO 
 
-2) 
+2) Use B_CRTS_SDSS_matching.ipynb  
+- match the CRTS quasars and stars by ra,dec position to the SDSS counterparts (they were obtained based on SDSS ra,dec so there is a perfect match, but we were only provided lightcurves with ra,dec of each object, so this matching allows to do 1-to-1 mapping of CRTS to SDSS objects) 
+- we use AstroPy SkyCoord to do 2D catalog matching in the most efficient manner 
+- save the CRTS-SDSS catalogs to CRTS_SDSS_combined_**_catalog.dat file, where ** stands for 'QSO' or 'stars'
+- (note :  B_sf_CRTS_SDSS_matching_NEW.py  is now deprecated )
+
+3) Use C_sf_load_single_LC.py  
+- this program makes 'master' files per object light curve,  containing   delta_time,  delta_magnitude,  combined_error 
+- we also investigated in detail the dependence between cadence and structure of the pairwise covariance of magnitude measurements. To do that we extracted delta_time, delta_magnitude, combined_error,  t1, t1, m1, m2,  e1, e2  , using C_sf_load_single_LC_detail.ipynb 
 
 
+4) Use D_Fig_2_CRTS_sel_r_cut.ipynb
+- based on SDSS r-magnitude we select objects in a given class (stars or QSO), within the magnitude bin (17-18, 18-18.5, 18.5-19). Stars are split into 'red' and 'blue' samples  by SDSS g-i  color
+- given the objectId in each sample, we read the delta_mag (aka xi) and combined_error (aka ei) from 'master' files 
 
 
