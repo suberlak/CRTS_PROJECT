@@ -225,7 +225,8 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
     return  star_id
 
 
-def faster_read_xi_ei(inDirSF = None, good_ids = None , detailed = None ):
+def faster_read_xi_ei(inDirSF = None, good_ids = None , 
+    detailed = None ):
     ''' A trimmed down version of fast_read_xi_ei : there is no  need really
     to have all variables as input : it is conceptually easier to 
     call a simple function three times, than to make a function three 
@@ -272,7 +273,7 @@ def faster_read_xi_ei(inDirSF = None, good_ids = None , detailed = None ):
     xi_store = list(np.zeros(len(ids)))
     ei_store = list(np.zeros(len(ids)))
     
-    if detailed is not None : 
+    if detailed is True : 
         print('\nReading in detailed SF : t1, t2, e1, e2, m1, m2')
         t1_store = list(np.zeros(len(ids)))
         t2_store = list(np.zeros(len(ids)))
