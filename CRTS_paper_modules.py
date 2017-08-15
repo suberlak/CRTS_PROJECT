@@ -129,7 +129,8 @@ def get_stars_catalog():
 
 # Perform cuts 
 def cut_qso(qso_cat=None, mMin=-9, mMax=19,   
-            mErrMin = -9, mErrMax = 0.3,cut_mag='r', redshift = None, match_radius_arcsec = 2.0 , survey='CRTS'):
+            mErrMin = -9, mErrMax = 0.3,cut_mag='r', redshift = None, 
+            match_radius_arcsec = 2.0 , survey='CRTS'):
     ''' A short  routine to select CRTS quasars according to desired parameters.
     
     Parameters:
@@ -137,8 +138,8 @@ def cut_qso(qso_cat=None, mMin=-9, mMax=19,
     qso_cat  - a CRTS-SDSS matched catalog, the output of get_qso_catalog()
     mMin / mMax - minimum / maximum  desired magnitude , of SDSS filter specified 
               by cut_mag  
-    mErrMin / mErrMax - minimum / maximum  desired average CRTS/PTF lightcurve error, AFTER 
-              day-averaging 
+    mErrMin / mErrMax - minimum / maximum  desired average CRTS/PTF lightcurve error, 
+              AFTER day-averaging 
     cut_mag - desired SDSS filter for the cut,  allowed values  are u,g,r,i,z. 
               Default setting is 'r' 
     match_radius_arcsec  - a maximum matching radius  allowed   in arcsec - the CRTS-SDSS matched 
@@ -166,7 +167,7 @@ def cut_qso(qso_cat=None, mMin=-9, mMax=19,
         mask_mag = (qso_cat[cut_mag] > mMin) * (qso_cat[cut_mag] < mMax)
         mask_err = (qso_cat['avg_day_err']> mErrMin) * (qso_cat['avg_day_err'] < mErrMax)
         mask = mask_rad * mask_mag * mask_err 
-        qso_id = qso_cat['ra_sdss'][mask]
+        qso_id = qso_cat['ra_sdss'][mask].data.astype(str)
 
 
     print('\n These cuts reduced the number of qso  in the sample from %d to %d' %
@@ -218,7 +219,7 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
     if survey == 'PTF' : 
         mask_err = (star_cat['avg_day_err'] > mErrMin) * (star_cat['avg_day_err'] < mErrMax)
         mask = mask_mag * mask_err * mask_color
-        star_id = star_cat['ra_sdss'][mask]
+        star_id = star_cat['ra_sdss'][mask].data.astype(str)
         print(' These cuts reduced the number of stars  in the sample from %d to %d'%
             (len(star_cat['ra_sdss']),  len(star_id)))
 
@@ -226,18 +227,20 @@ def cut_stars(star_cat=None, mMin=-9, mMax=19, mErrMin = -9,
 
 
 def faster_read_xi_ei(inDirSF = None, good_ids = None , 
-    detailed = None ):
+    detailed = None , redshifts = None):
     ''' A trimmed down version of fast_read_xi_ei : there is no  need really
     to have all variables as input : it is conceptually easier to 
     call a simple function three times, than to make a function three 
     times as complicated.  Plus,  that way we don't necessarily have 
     to be reading qso, starsR , or starsR : it could be stars, 
-    or just qso, or only starsR...   Using the same engine as fast_read_xi_ei(), 
+    or just qso, or only starsR...   Using the same engine as 
+    fast_read_xi_ei(), 
     so speed of execution should be the same . 
    
     Parameters: 
     -----------
-    inDirSF : a directory where we can find the 'master' files.  Whether it should point to the 'simple'
+    inDirSF : a directory where we can find the 'master' files.  Whether it 
+          should point to the 'simple'
           or 'detailed' master files, is up to user. Examples:   
           inDirSF = '../data_products/sf_file_per_LC/stars/'
           inDirSF = '../data_products/sf_file_per_LC/qso/' 
@@ -245,21 +248,28 @@ def faster_read_xi_ei(inDirSF = None, good_ids = None ,
           inDirSF = '../data_products/sf_file_per_LC/qso_detailed/'
           inDirSF = '../data_products/sf_file_per_LC_PTF/stars/'
           inDirSF = '../data_products/sf_file_per_LC_PTF/qso/' 
-    good_ids : a list of object names for which we should read in the master files. 
-        We assume that each   master file is called    'SF_' + name + '.txt'
-    detailed =  if not None,  then apart from three standard columns in master files 
-         (delta_time,  delta_mag,  error(delta_mag)),  we also expect   t1, t2,  m1, m2,  e1,  e2, 
+    good_ids : a list of object names for which we should read in the master 
+          files. We assume that each   master file is called    
+         'SF_' + name + '.txt'. Therefore ids must be an array of strings 
+    detailed =  if not None,  then apart from three standard columns in 
+          master files (delta_time,  delta_mag,  error(delta_mag)),  
+          we also expect   
+          t1, t2,  m1, m2,  e1,  e2, 
           i.e. all the data taht was used to prepare master files...     
+    redshifts : if provided , then it applies redsfhit correction to 
+          all quasars read according to good_ids.  It has to be an
+          array of the same length as good_ids s
 
     Returns :
     ----------
-    store : a dictionary with keys corresponding to nonzero either  xi, tau, ei, or  that plus 
-          t1, t2,  m1, m2,  e1,  e2,  eg. 
+    store : a dictionary with keys corresponding to nonzero either  xi, tau, 
+          ei, or  that plus t1, t2,  m1, m2,  e1,  e2,  eg. 
 
           store = {'xi':xi_flat, 'tau':tau_flat, 'ei':ei_flat}
           or 
           store = {'xi':xi_flat, 'tau':tau_flat, 'ei':ei_flat, 't1':t1_flat, 
-                   't2':t2_flat, 'm1': m1_flat, 'm2':m2_flat, 'e1':e1_flat, 'e2': e2_flat}
+                   't2':t2_flat, 'm1': m1_flat, 'm2':m2_flat, 'e1':e1_flat, 
+                   'e2': e2_flat}
 
     '''
     # rename some variables to slim the code 
@@ -267,6 +277,8 @@ def faster_read_xi_ei(inDirSF = None, good_ids = None ,
     print('\nReading in tau,xi,ei  for %d objects'%len(good_ids))
     print('\nUsing structure function master files from %s'%inDir)
     
+    if redshifts is not None: 
+        print('Applying redshift correction tau_rest = tau_obs / (1+z)')
 
     # initialize storage arrays... 
     tau_store = list(np.zeros(len(ids)))
@@ -282,16 +294,21 @@ def faster_read_xi_ei(inDirSF = None, good_ids = None ,
         m1_store = list(np.zeros(len(ids)))
         m2_store = list(np.zeros(len(ids)))
 
-    # loop over all master files .. 
+    
     c = 0
-
+    # loop over all master files .. 
     for i in range(len(ids)) : 
         File = 'SF_' + ids[i] +'.txt'
         address = inDir+File
         data =  np.loadtxt(address)
 
         xi_store[i]  = data[:,0]
-        tau_store[i] = data[:,1]
+        # applying redshift correction ... 
+        if redshifts is not None : 
+            tau_store[i] = data[:,1] / (1+ redshifts[i])
+        else:
+            tau_store[i] = data[:,1]
+
         ei_store[i]  = data[:,2]
 
         if detailed is not None : 
@@ -331,8 +348,10 @@ def faster_read_xi_ei(inDirSF = None, good_ids = None ,
 
 def fast_read_xi_ei(inDirStars = '../data_products/sf_file_per_LC/stars/', 
                     inDirQSO= '../data_products/sf_file_per_LC/qso/',  
-                    good_ids_S_blue = None , good_ids_S_red = None , good_ids_QSO = None, detailed = None ):
-    ''' A function combining what read_xi_ei and add_tau_delflx  would do much slower. 
+                    good_ids_S_blue = None , good_ids_S_red = None , 
+                    good_ids_QSO = None, detailed = None ):
+    ''' A function combining what read_xi_ei and add_tau_delflx  would do 
+    much slower. 
    
     Parameters: 
     -----------
@@ -344,7 +363,8 @@ def fast_read_xi_ei(inDirStars = '../data_products/sf_file_per_LC/stars/',
     
     Returns :
     ----------
-    store : a dictionary with keys corresponding to nonzero object lists provided as input. 
+    store : a dictionary with keys corresponding to nonzero object lists 
+    provided as input. 
     '''
     store = {}   
     
@@ -444,10 +464,10 @@ def add_tau_delflx(File, inDir, data, z=None, tau_min = None, tau_max = None):
          be a scalar corresponding to the object for which we are reading in 
          xi, ei, tau points 
 
-    tau_min : if not None, a scalar corresponding to the min tau that we want to 
-         keep
-    tau_max : if not None, a scalar corresponding to the max tau that we want to 
-         keep
+    tau_min : if not None, a scalar corresponding to the min tau that we want 
+          to keep
+    tau_max : if not None, a scalar corresponding to the max tau that we want 
+          to keep
     
     Returns:
     ---------
@@ -494,12 +514,14 @@ def add_tau_delflx(File, inDir, data, z=None, tau_min = None, tau_max = None):
         store_tau = np.append(store_tau, file_tau[m])
 
     store_ei = np.append(store_ei, file_ei[m])
-    store_object_list = np.append(store_object_list, np.array(len(file_xi[m])*[object_name]))
+    store_object_list = np.append(store_object_list, 
+        np.array(len(file_xi[m])*[object_name]))
     
     return store_xi, store_tau, store_ei, store_object_list
     
 def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
-                 good_ids_QSO, good_ids_S_red=None, redshift=None,tau_min = None, 
+                 good_ids_QSO, good_ids_S_red=None, redshift=None,
+                 tau_min = None, 
                  tau_max = None):
     ''' A routine to read the delta_mag (xi), delta_time (tau), and error (ei) 
     for CRTS / PTF stars and quasars. Stars and quasar master files are read from 
@@ -517,7 +539,8 @@ def read_xi_ei(inDirStars, good_ids_S_blue, inDirQSO,
     Optional Parameters :
     ----------------------
     good_ids_S_red=None :  if specified, only red stars would be read 
-    redshift=None : if not None,  then correcting QSOs for redshift ( expect an array of z )
+    redshift=None : if not None,  then correcting QSOs for redshift ( expect 
+    an array of z )
     tau_min , tau_max : if not None,  scalars corresponding to the limits on 
          tau that we want to read-in from each master file 
     
